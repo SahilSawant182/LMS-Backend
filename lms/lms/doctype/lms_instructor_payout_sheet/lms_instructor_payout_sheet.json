@@ -1,0 +1,129 @@
+{
+  "actions": [],
+  "autoname": "naming_series:",
+  "creation": "2026-10-13 00:00:00.000000",
+  "doctype": "DocType",
+  "editable_grid": 1,
+  "engine": "InnoDB",
+  "field_order": [
+    "title",
+    "naming_series",
+    "column_break_h1",
+    "billing_cycle",
+    "status",
+    "period_section",
+    "start_date",
+    "column_break_p1",
+    "end_date",
+    "notes_section",
+    "notes",
+    "summary_tab",
+    "instructor_rows"
+  ],
+  "fields": [
+    {
+      "fieldname": "title",
+      "fieldtype": "Data",
+      "label": "Title",
+      "read_only": 1
+    },
+    {
+      "fieldname": "naming_series",
+      "fieldtype": "Select",
+      "label": "Series",
+      "options": "INSTR-PAY-.YYYY.-.MM.-"
+    },
+    {
+      "fieldname": "column_break_h1",
+      "fieldtype": "Column Break"
+    },
+    {
+      "fieldname": "billing_cycle",
+      "fieldtype": "Select",
+      "label": "Billing Cycle",
+      "options": "Monthly\nWeekly\nFortnightly\nQuarterly",
+      "default": "Monthly",
+      "reqd": 1
+    },
+    {
+      "fieldname": "status",
+      "fieldtype": "Select",
+      "label": "Status",
+      "options": "Draft\nApproved\nPaid\nCancelled",
+      "default": "Draft",
+      "read_only": 1
+    },
+    {
+      "fieldname": "period_section",
+      "fieldtype": "Section Break",
+      "label": "Billing Period"
+    },
+    {
+      "fieldname": "start_date",
+      "fieldtype": "Date",
+      "label": "Start Date",
+      "reqd": 1
+    },
+    {
+      "fieldname": "column_break_p1",
+      "fieldtype": "Column Break"
+    },
+    {
+      "fieldname": "end_date",
+      "fieldtype": "Date",
+      "label": "End Date",
+      "reqd": 1
+    },
+    {
+      "fieldname": "notes_section",
+      "fieldtype": "Section Break",
+      "label": "Notes"
+    },
+    {
+      "fieldname": "notes",
+      "fieldtype": "Small Text",
+      "label": "Admin Notes"
+    },
+    {
+      "fieldname": "summary_tab",
+      "fieldtype": "Section Break",
+      "label": "Instructor Payout Summary"
+    },
+    {
+      "fieldname": "instructor_rows",
+      "fieldtype": "Table",
+      "label": "Instructor Payout Rows",
+      "options": "LMS Instructor Payout Sheet Row"
+    }
+  ],
+  "is_submittable": 1,
+  "links": [],
+  "modified": "2026-10-13 00:00:00.000000",
+  "modified_by": "Administrator",
+  "module": "LMS",
+  "name": "LMS Instructor Payout Sheet",
+  "owner": "Administrator",
+  "permissions": [
+    {
+      "create": 1,
+      "delete": 1,
+      "email": 1,
+      "print": 1,
+      "read": 1,
+      "report": 1,
+      "role": "Administrator",
+      "share": 1,
+      "submit": 1,
+      "write": 1
+    },
+    {
+      "read": 1,
+      "role": "System Manager",
+      "write": 1,
+      "submit": 1
+    }
+  ],
+  "sort_field": "modified",
+  "sort_order": "DESC",
+  "track_changes": 1
+}

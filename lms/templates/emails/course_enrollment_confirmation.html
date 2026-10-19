@@ -1,0 +1,70 @@
+<!-- N1: Free Course Enrollment Confirmation -->
+<div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #ffffff;">
+
+  <!-- Header Banner -->
+  <div style="background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%); border-radius: 16px 16px 0 0; padding: 40px 36px 32px; text-align: center;">
+    <div style="display:inline-block; background: rgba(255,255,255,0.12); border-radius: 50%; width: 64px; height: 64px; line-height: 64px; font-size: 32px; margin-bottom: 16px;">🎓</div>
+    <h1 style="color: #ffffff; font-size: 24px; font-weight: 700; margin: 0 0 8px; letter-spacing: -0.5px;">You're Enrolled!</h1>
+    <p style="color: rgba(255,255,255,0.75); font-size: 14px; margin: 0;">Your learning journey begins now</p>
+  </div>
+
+  <!-- Body -->
+  <div style="background: #f8fafc; padding: 36px 36px 28px; border-left: 1px solid #e2e8f0; border-right: 1px solid #e2e8f0;">
+
+    <p style="color: #1e293b; font-size: 16px; margin: 0 0 20px;">Hi <strong>{{ student_name }}</strong>,</p>
+
+    <p style="color: #475569; font-size: 15px; line-height: 1.6; margin: 0 0 24px;">
+      Congratulations! 🎉 You have been successfully enrolled in the course
+      <strong style="color: #1e293b;">{{ course_title }}</strong>.
+      We're thrilled to have you on board and can't wait to see you grow!
+    </p>
+
+    <!-- Course Card -->
+    <div style="background: #ffffff; border-radius: 12px; border: 1px solid #e2e8f0; padding: 20px 24px; margin-bottom: 28px; box-shadow: 0 1px 4px rgba(0,0,0,0.06);">
+      <div style="font-size: 11px; font-weight: 700; letter-spacing: 1px; color: #64748b; text-transform: uppercase; margin-bottom: 12px;">Enrollment Details</div>
+      <table style="width: 100%; border-collapse: collapse;">
+        <tr>
+          <td style="padding: 8px 0; color: #64748b; font-size: 14px; width: 40%;">📚 Course</td>
+          <td style="padding: 8px 0; color: #1e293b; font-size: 14px; font-weight: 600;">{{ course_title }}</td>
+        </tr>
+        <tr>
+          <td style="padding: 8px 0; color: #64748b; font-size: 14px; border-top: 1px solid #f1f5f9;">📅 Enrolled On</td>
+          <td style="padding: 8px 0; color: #1e293b; font-size: 14px; font-weight: 600; border-top: 1px solid #f1f5f9;">{{ enrollment_date }}</td>
+        </tr>
+        <tr>
+          <td style="padding: 8px 0; color: #64748b; font-size: 14px; border-top: 1px solid #f1f5f9;">🌐 Platform</td>
+          <td style="padding: 8px 0; color: #1e293b; font-size: 14px; font-weight: 600; border-top: 1px solid #f1f5f9;">{{ app_name }}</td>
+        </tr>
+      </table>
+    </div>
+
+    <!-- What's Next -->
+    <div style="background: linear-gradient(135deg, #eff6ff 0%, #f0fdf4 100%); border-radius: 12px; padding: 20px 24px; margin-bottom: 28px; border-left: 4px solid #3b82f6;">
+      <div style="font-size: 14px; font-weight: 700; color: #1e40af; margin-bottom: 12px;">🚀 What's Next?</div>
+      <ul style="margin: 0; padding: 0 0 0 20px; color: #475569; font-size: 14px; line-height: 1.8;">
+        <li>Start the first lesson at your own pace</li>
+        <li>Track your progress on the course dashboard</li>
+        <li>Complete all lessons to earn your certificate</li>
+        <li>Join discussions to connect with fellow learners</li>
+      </ul>
+    </div>
+
+    <!-- CTA Button -->
+    <div style="text-align: center; margin-bottom: 24px;">
+      <a href="{{ site_url }}{{ course_link }}" style="display: inline-block; background: linear-gradient(135deg, #0f3460 0%, #1a1a2e 100%); color: #ffffff; text-decoration: none; font-size: 15px; font-weight: 700; padding: 14px 36px; border-radius: 10px; letter-spacing: 0.3px;">
+        ▶ Start Learning Now
+      </a>
+    </div>
+
+    <p style="color: #94a3b8; font-size: 13px; text-align: center; margin: 0;">
+      Or copy this link: <a href="{{ site_url }}{{ course_link }}" style="color: #3b82f6; word-break: break-all;">{{ site_url }}{{ course_link }}</a>
+    </p>
+  </div>
+
+  <!-- Footer -->
+  <div style="background: #1e293b; border-radius: 0 0 16px 16px; padding: 24px 36px; text-align: center;">
+    <p style="color: rgba(255,255,255,0.6); font-size: 13px; margin: 0 0 8px;">Happy Learning! 🌟</p>
+    <p style="color: rgba(255,255,255,0.4); font-size: 12px; margin: 0;">{{ app_name }} &bull; <a href="{{ site_url }}" style="color: rgba(255,255,255,0.4);">{{ site_url }}</a></p>
+  </div>
+
+</div>

@@ -1,0 +1,90 @@
+<!-- N25: Assignment Graded - FAIL -->
+<div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #ffffff;">
+
+  <!-- Header -->
+  <div style="background: linear-gradient(135deg, #7c2d12 0%, #9a3412 50%, #c2410c 100%); border-radius: 16px 16px 0 0; padding: 40px 36px 32px; text-align: center;">
+    <div style="display:inline-block; background: rgba(255,255,255,0.15); border-radius: 50%; width: 72px; height: 72px; line-height: 72px; font-size: 36px; margin-bottom: 16px;">📝</div>
+    <h1 style="color: #ffffff; font-size: 24px; font-weight: 800; margin: 0 0 8px; letter-spacing: -0.5px;">Assignment Result</h1>
+    <p style="color: rgba(255,255,255,0.80); font-size: 14px; margin: 0;">Your submission has been evaluated</p>
+  </div>
+
+  <!-- Fail Badge -->
+  <div style="background: #fff7ed; text-align: center; padding: 20px; border-left: 1px solid #fed7aa; border-right: 1px solid #fed7aa;">
+    <span style="display: inline-block; background: #ea580c; color: #ffffff; font-size: 13px; font-weight: 800; padding: 6px 20px; border-radius: 30px; letter-spacing: 1.5px; text-transform: uppercase;">✗ NEEDS IMPROVEMENT</span>
+  </div>
+
+  <!-- Body -->
+  <div style="background: #f8fafc; padding: 32px 36px 28px; border-left: 1px solid #e2e8f0; border-right: 1px solid #e2e8f0;">
+
+    <p style="color: #1e293b; font-size: 16px; margin: 0 0 20px;">Hi <strong>{{ student_name }}</strong>,</p>
+
+    <p style="color: #475569; font-size: 15px; line-height: 1.6; margin: 0 0 24px;">
+      Your submission for <strong style="color: #1e293b;">{{ assignment_title }}</strong>
+      has been reviewed. While it hasn't met the passing criteria this time, don't be discouraged —
+      this is a great opportunity to learn and improve! 💪
+    </p>
+
+    <!-- Result Card -->
+    <div style="background: #ffffff; border-radius: 12px; border: 1px solid #fed7aa; padding: 20px 24px; margin-bottom: 20px; box-shadow: 0 1px 4px rgba(234,88,12,0.08);">
+      <div style="font-size: 11px; font-weight: 700; letter-spacing: 1px; color: #ea580c; text-transform: uppercase; margin-bottom: 12px;">📋 Assignment Result</div>
+      <table style="width: 100%; border-collapse: collapse;">
+        <tr>
+          <td style="padding: 8px 0; color: #64748b; font-size: 14px; width: 45%;">Assignment</td>
+          <td style="padding: 8px 0; color: #1e293b; font-size: 14px; font-weight: 600;">{{ assignment_title }}</td>
+        </tr>
+        <tr>
+          <td style="padding: 8px 0; color: #64748b; font-size: 14px; border-top: 1px solid #f1f5f9;">Course</td>
+          <td style="padding: 8px 0; color: #1e293b; font-size: 14px; font-weight: 600; border-top: 1px solid #f1f5f9;">{{ course_title }}</td>
+        </tr>
+        <tr>
+          <td style="padding: 8px 0; color: #64748b; font-size: 14px; border-top: 1px solid #f1f5f9;">Result</td>
+          <td style="padding: 8px 0; border-top: 1px solid #f1f5f9;">
+            <span style="background: #fee2e2; color: #991b1b; font-size: 13px; font-weight: 700; padding: 3px 12px; border-radius: 20px;">FAIL — Resubmit Required</span>
+          </td>
+        </tr>
+        <tr>
+          <td style="padding: 8px 0; color: #64748b; font-size: 14px; border-top: 1px solid #f1f5f9;">Evaluated By</td>
+          <td style="padding: 8px 0; color: #1e293b; font-size: 14px; font-weight: 600; border-top: 1px solid #f1f5f9;">{{ evaluator_name }}</td>
+        </tr>
+      </table>
+    </div>
+
+    {% if comments %}
+    <!-- Instructor Feedback (critical for fail) -->
+    <div style="background: #fff7ed; border-radius: 12px; border-left: 4px solid #f97316; padding: 16px 20px; margin-bottom: 24px;">
+      <div style="font-size: 13px; font-weight: 700; color: #c2410c; margin-bottom: 8px;">💬 Instructor Feedback — Please Read Carefully</div>
+      <p style="color: #7c2d12; font-size: 14px; line-height: 1.6; margin: 0;">{{ comments }}</p>
+    </div>
+    {% endif %}
+
+    <!-- Next Steps -->
+    <div style="background: linear-gradient(135deg, #f0f9ff 0%, #fef9ee 100%); border-radius: 12px; padding: 20px 24px; margin-bottom: 28px; border-left: 4px solid #0ea5e9;">
+      <div style="font-size: 14px; font-weight: 700; color: #0369a1; margin-bottom: 12px;">📌 Next Steps to Pass</div>
+      <ul style="margin: 0; padding: 0 0 0 20px; color: #475569; font-size: 14px; line-height: 1.8;">
+        <li>Review the instructor's feedback above carefully</li>
+        <li>Revisit the lesson materials for clarity</li>
+        <li>Revise and resubmit your assignment</li>
+        <li>Contact your instructor if you need help</li>
+      </ul>
+    </div>
+
+    <!-- CTA Button -->
+    <div style="text-align: center; margin-bottom: 20px;">
+      <a href="{{ site_url }}{{ submission_link }}" style="display: inline-block; background: linear-gradient(135deg, #7c2d12 0%, #c2410c 100%); color: #ffffff; text-decoration: none; font-size: 15px; font-weight: 700; padding: 14px 36px; border-radius: 10px;">
+        📄 View &amp; Resubmit
+      </a>
+    </div>
+
+    <p style="color: #475569; font-size: 14px; line-height: 1.6; text-align: center; margin: 0;">
+      You've got this! Every expert was once a beginner. 💡
+    </p>
+
+  </div>
+
+  <!-- Footer -->
+  <div style="background: #7c2d12; border-radius: 0 0 16px 16px; padding: 24px 36px; text-align: center;">
+    <p style="color: rgba(255,255,255,0.7); font-size: 13px; margin: 0 0 8px;">We believe in your potential! 🌟</p>
+    <p style="color: rgba(255,255,255,0.45); font-size: 12px; margin: 0;">{{ app_name }} &bull; <a href="{{ site_url }}" style="color: rgba(255,255,255,0.45); text-decoration: none;">{{ site_url }}</a></p>
+  </div>
+
+</div>

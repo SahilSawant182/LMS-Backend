@@ -5,6 +5,7 @@ import json
 
 import frappe
 from frappe import _
+from frappe.desk.doctype.notification_log.notification_log import make_notification_logs
 from frappe.email.doctype.email_template.email_template import get_email_template
 from frappe.model.document import Document
 from frappe.query_builder import Bracket
@@ -17,6 +18,8 @@ from lms.lms.utils import has_moderator_role
 # Roles that keep today's blanket access: every row, every ptype.
 UNSCOPED_ROLES = ("Moderator", "Batch Evaluator")
 
+from lms.lms.utils import get_lms_route
+
 
 class LMSBatchEnrollment(Document):
 	def after_insert(self):
@@ -24,6 +27,11 @@ class LMSBatchEnrollment(Document):
 		from lms.lms.doctype.lms_live_class.lms_live_class import add_learner_to_live_classes
 
 		add_learner_to_live_classes(self.batch)
+		
+		self.notify_instructors_of_new_batch_enrollment()
+
+	def on_trash(self):
+		self.notify_instructors_of_dropout()
 
 	def validate(self):
 		validate_identity_unchanged(self, ("batch", "member"))
@@ -130,6 +138,75 @@ class LMSBatchEnrollment(Document):
 				enrollment.save()
 
 
+	def notify_instructors_of_new_batch_enrollment(self):
+		"""N10 – System notification to batch instructors when a student enrolls."""
+		instructors = frappe.get_all(
+			"Course Instructor",
+			{"parent": self.batch, "parenttype": "LMS Batch"},
+			pluck="instructor",
+		)
+		if not instructors:
+			return
+
+		student_name = frappe.db.get_value("User", self.member, "full_name") or self.member
+		batch_title = frappe.db.get_value("LMS Batch", self.batch, "title") or self.batch
+		link = get_lms_route(f"batches/{self.batch}")
+
+		notification = frappe._dict(
+			{
+				"subject": _("{0} enrolled in your batch {1}").format(
+					frappe.bold(student_name), frappe.bold(batch_title)
+				),
+				"email_content": _(
+					"{0} has just joined your batch '{1}'. Your class size has grown!"
+				).format(student_name, batch_title),
+				"document_type": "LMS Batch Enrollment",
+				"document_name": self.name,
+				"from_user": self.member,
+				"type": "Alert",
+				"link": link,
+			}
+		)
+		try:
+			make_notification_logs(notification, instructors)
+		except Exception:
+			frappe.log_error(frappe.get_traceback(), "LMS: Batch enrollment instructor notification failed")
+
+	def notify_instructors_of_dropout(self):
+		"""N11 – System notification to batch instructors when a student drops from the batch."""
+		instructors = frappe.get_all(
+			"Course Instructor",
+			{"parent": self.batch, "parenttype": "LMS Batch"},
+			pluck="instructor",
+		)
+		if not instructors:
+			return
+
+		student_name = frappe.db.get_value("User", self.member, "full_name") or self.member
+		batch_title = frappe.db.get_value("LMS Batch", self.batch, "title") or self.batch
+		link = get_lms_route(f"batches/{self.batch}")
+
+		notification = frappe._dict(
+			{
+				"subject": _("{0} has dropped from your batch {1}").format(
+					frappe.bold(student_name), frappe.bold(batch_title)
+				),
+				"email_content": _(
+					"{0} has withdrawn from your batch '{1}'. Please update your headcount accordingly."
+				).format(student_name, batch_title),
+				"document_type": "LMS Batch",
+				"document_name": self.batch,
+				"from_user": self.member,
+				"type": "Alert",
+				"link": link,
+			}
+		)
+		try:
+			make_notification_logs(notification, instructors)
+		except Exception:
+			frappe.log_error(frappe.get_traceback(), "LMS: Batch dropout instructor notification failed")
+
+
 @frappe.whitelist()
 def send_confirmation_email(doc: Document | str):
 	if isinstance(doc, str):
@@ -201,6 +278,7 @@ def send_mail(doc):
 	)
 
 
+<<<<<<< Updated upstream
 def has_permission(doc, ptype="read", user=None):
 	"""A Course Creator's unconditional DocPerm row narrowed to the batches they
 	author. Moderator and Batch Evaluator keep today's blanket access; an
@@ -241,3 +319,238 @@ def get_permission_query_conditions(user=None):
 	member = LiteralValue(frappe.db.escape(user))
 	condition = Bracket((enrollment.member == member) | authored_batch_condition(enrollment.batch, user))
 	return condition.get_sql(with_namespace=True, quote_char="`" if frappe.db.db_type == "mariadb" else '"')
+=======
+
+
+@frappe.whitelist()
+def enroll_student(member, batch, payment=None, source=None):
+    """
+    Enroll a student/member into an LMS Batch.
+
+    API:
+    /api/method/stridenex_app.api_stridenex_app.lms.enroll_student
+
+    Method:
+    POST
+
+    Example body:
+    {
+        "member": "student@example.com",
+        "batch": "BATCH-0001",
+        "payment": "PAY-0001",
+        "source": "SRC-0001"
+    }
+    """
+
+    try:
+        if not member:
+            return {
+                "success": False,
+                "message": "Member is required"
+            }
+
+        if not batch:
+            return {
+                "success": False,
+                "message": "Batch is required"
+            }
+
+        # Check User exists
+        if not frappe.db.exists("User", member):
+            return {
+                "success": False,
+                "message": f"User {member} does not exist"
+            }
+
+        # Check Batch exists
+        if not frappe.db.exists("LMS Batch", batch):
+            return {
+                "success": False,
+                "message": f"LMS Batch {batch} does not exist"
+            }
+
+        # Check duplicate enrollment
+        existing = frappe.db.exists(
+            "LMS Batch Enrollment",
+            {
+                "member": member,
+                "batch": batch
+            }
+        )
+
+        if existing:
+            return {
+                "success": False,
+                "message": "Student is already enrolled in this batch",
+                "enrollment": existing
+            }
+
+        # Create enrollment
+        enrollment = frappe.get_doc({
+            "doctype": "LMS Batch Enrollment",
+            "member": member,
+            "batch": batch,
+            "payment": payment,
+            "source": source
+        })
+
+        enrollment.insert(ignore_permissions=True)
+        frappe.db.commit()
+
+        return {
+            "success": True,
+            "message": "Student enrolled successfully",
+            "data": {
+                "name": enrollment.name,
+                "member": enrollment.member,
+                "member_name": enrollment.member_name,
+                "member_username": enrollment.member_username,
+                "member_image": enrollment.member_image,
+                "batch": enrollment.batch,
+                "payment": enrollment.payment,
+                "source": enrollment.source,
+                "confirmation_email_sent": enrollment.confirmation_email_sent,
+                "creation": enrollment.creation
+            }
+        }
+
+    except Exception as e:
+        frappe.log_error(
+            frappe.get_traceback(),
+            "LMS Student Enrollment API Error"
+        )
+
+        frappe.db.rollback()
+
+        return {
+            "success": False,
+            "message": str(e)
+        }
+
+
+@frappe.whitelist()
+def get_enrolled_students(batch=None, member=None, txt="", limit=20, start=0):
+    """
+    Get enrolled students.
+
+    API:
+    /api/method/stridenex_app.api_stridenex_app.lms.get_enrolled_students
+
+    Examples:
+
+    All enrollments:
+    ?limit=20&start=0
+
+    Students of a batch:
+    ?batch=BATCH-0001
+
+    Specific student:
+    ?member=student@example.com
+
+    Search:
+    ?batch=BATCH-0001&txt=John
+    """
+
+    try:
+        limit = min(int(limit), 100)
+        start = int(start)
+
+        filters = {}
+
+        if batch:
+            if not frappe.db.exists("LMS Batch", batch):
+                return {
+                    "success": False,
+                    "message": f"LMS Batch {batch} does not exist"
+                }
+
+            filters["batch"] = batch
+
+        if member:
+            filters["member"] = member
+
+        conditions = []
+        values = {
+            "limit": limit,
+            "start": start
+        }
+
+        if batch:
+            conditions.append("e.batch = %(batch)s")
+            values["batch"] = batch
+
+        if member:
+            conditions.append("e.member = %(member)s")
+            values["member"] = member
+
+        if txt:
+            conditions.append("""
+                (
+                    e.member LIKE %(txt)s
+                    OR e.member_name LIKE %(txt)s
+                    OR e.member_username LIKE %(txt)s
+                )
+            """)
+            values["txt"] = f"%{txt}%"
+
+        where_clause = ""
+
+        if conditions:
+            where_clause = "WHERE " + " AND ".join(conditions)
+
+        students = frappe.db.sql(
+            f"""
+            SELECT
+                e.name,
+                e.member,
+                e.member_name,
+                e.member_username,
+                e.member_image,
+                e.batch,
+                e.payment,
+                e.source,
+                e.confirmation_email_sent,
+                e.creation
+            FROM `tabLMS Batch Enrollment` e
+            {where_clause}
+            ORDER BY e.creation DESC
+            LIMIT %(start)s, %(limit)s
+            """,
+            values,
+            as_dict=True
+        )
+
+        # Total count
+        total = frappe.db.sql(
+            f"""
+            SELECT COUNT(*) AS total
+            FROM `tabLMS Batch Enrollment` e
+            {where_clause}
+            """,
+            values,
+            as_dict=True
+        )[0].total
+
+        return {
+            "success": True,
+            "data": students,
+            "pagination": {
+                "total": total,
+                "limit": limit,
+                "start": start,
+                "has_more": (start + len(students)) < total
+            }
+        }
+
+    except Exception as e:
+        frappe.log_error(
+            frappe.get_traceback(),
+            "LMS Enrolled Students API Error"
+        )
+
+        return {
+            "success": False,
+            "message": str(e)
+        }
+
+>>>>>>> Stashed changes

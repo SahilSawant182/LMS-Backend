@@ -3,17 +3,73 @@
 
 import frappe
 from frappe import _
+from frappe.desk.doctype.notification_log.notification_log import make_notification_logs
 from frappe.model.document import Document
 from frappe.model.mapper import get_mapped_doc
 from frappe.query_builder import Bracket
 from pypika.terms import LiteralValue
 
 from lms.lms.utils import get_evaluator, has_moderator_role
+from lms.lms.utils import has_moderator_role, get_lms_route
 
 
 class LMSCertificateEvaluation(Document):
 	def validate(self):
 		self.validate_rating()
+
+	def on_update(self):
+		"""N39 – Notify student when evaluation status changes to Completed, Pass, or Fail."""
+		if not self.has_value_changed("status"):
+			return
+
+		terminal_statuses = {"Completed", "Pass", "Fail"}
+		if self.status not in terminal_statuses:
+			return
+
+		doc_before = self.get_doc_before_save()
+		if doc_before and doc_before.get("status") in terminal_statuses:
+			return  # already notified for a terminal status
+
+		self.notify_student_of_evaluation_result()
+
+	def notify_student_of_evaluation_result(self):
+		"""Fire in-app notification to the student about their evaluation outcome."""
+		student = self.member
+		if not student:
+			return
+
+		if self.status == "Completed":
+			subject = _("✅ Your evaluation for {0} has been completed.").format(
+				frappe.bold(self.course)
+			)
+			body = _("Your certificate evaluation for '{0}' has been marked as completed by the evaluator.").format(
+				self.course
+			)
+		elif self.status == "Pass":
+			subject = _("🎉 You passed your evaluation for {0}!").format(frappe.bold(self.course))
+			body = _("Congratulations! You have passed the certificate evaluation for '{0}'.").format(self.course)
+		else:  # Fail
+			subject = _("Your evaluation result for {0} is available.").format(frappe.bold(self.course))
+			body = _(
+				"Your certificate evaluation for '{0}' has been reviewed. "
+				"Please check your result and reach out to your evaluator for feedback."
+			).format(self.course)
+
+		notification = frappe._dict(
+			{
+				"subject": subject,
+				"email_content": body,
+				"document_type": "LMS Certificate Evaluation",
+				"document_name": self.name,
+				"from_user": frappe.session.user,
+				"type": "Alert",
+				"link": get_lms_route(f"courses/{self.course}"),
+			}
+		)
+		try:
+			make_notification_logs(notification, [student])
+		except Exception:
+			frappe.log_error(frappe.get_traceback(), "LMS: Evaluation result notification failed")
 
 	def validate_rating(self):
 		if self.status not in ["Pending", "In Progress"] and self.rating == 0:

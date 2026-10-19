@@ -1,0 +1,164 @@
+{
+ "actions": [],
+ "allow_bulk_edit": 1,
+ "allow_rename": 1,
+ "creation": "2026-10-13 15:00:32.547146",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "released",
+  "instructor",
+  "instructor_name",
+  "col1",
+  "status",
+  "total_sales",
+  "fin_section",
+  "gross_sales",
+  "platform_commission_rate",
+  "col2",
+  "platform_commission",
+  "gst_on_commission",
+  "ded_section",
+  "refunds",
+  "net_earnings",
+  "col3",
+  "tds_rate",
+  "tds_amount",
+  "net_payout"
+ ],
+ "fields": [
+  {
+   "default": "0",
+   "fieldname": "released",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "label": "Release Payout"
+  },
+  {
+   "fieldname": "instructor",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Instructor Email",
+   "options": "User",
+   "reqd": 1
+  },
+  {
+   "fieldname": "instructor_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Instructor Name",
+   "read_only": 1
+  },
+  {
+   "fieldname": "col1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "Draft",
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Status",
+   "options": "Draft\nApproved\nPaid\nHold"
+  },
+  {
+   "fieldname": "total_sales",
+   "fieldtype": "Int",
+   "label": "# Transactions",
+   "read_only": 1
+  },
+  {
+   "fieldname": "fin_section",
+   "fieldtype": "Section Break",
+   "label": "Financial Breakdown"
+  },
+  {
+   "fieldname": "gross_sales",
+   "fieldtype": "Currency",
+   "in_list_view": 1,
+   "label": "Gross Sales (Rs.)",
+   "read_only": 1
+  },
+  {
+   "fieldname": "platform_commission_rate",
+   "fieldtype": "Percent",
+   "label": "Commission Rate (%)",
+   "read_only": 1
+  },
+  {
+   "fieldname": "col2",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "platform_commission",
+   "fieldtype": "Currency",
+   "label": "Platform Commission (Rs.)",
+   "read_only": 1
+  },
+  {
+   "fieldname": "gst_on_commission",
+   "fieldtype": "Currency",
+   "label": "GST on Commission @18% (Rs.)",
+   "read_only": 1
+  },
+  {
+   "fieldname": "ded_section",
+   "fieldtype": "Section Break",
+   "label": "Deductions and Net"
+  },
+  {
+   "fieldname": "refunds",
+   "fieldtype": "Currency",
+   "label": "Refunds / Reversals (Rs.)",
+   "read_only": 1
+  },
+  {
+   "fieldname": "net_earnings",
+   "fieldtype": "Currency",
+   "in_list_view": 1,
+   "label": "Net Earnings Before TDS (Rs.)",
+   "read_only": 1
+  },
+  {
+   "fieldname": "col3",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "tds_rate",
+   "fieldtype": "Percent",
+   "label": "TDS Rate (%)",
+   "read_only": 1
+  },
+  {
+   "fieldname": "tds_amount",
+   "fieldtype": "Currency",
+   "label": "TDS Deducted (Rs.)",
+   "read_only": 1
+  },
+  {
+   "bold": 1,
+   "fieldname": "net_payout",
+   "fieldtype": "Currency",
+   "in_list_view": 1,
+   "label": "Net Payout (Rs.)",
+   "read_only": 1
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "istable": 1,
+ "links": [],
+ "modified": "2026-10-13 15:01:10.583275",
+ "modified_by": "Administrator",
+ "module": "LMS",
+ "name": "LMS Instructor Payout Sheet Row",
+ "owner": "Administrator",
+ "permissions": [],
+ "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}

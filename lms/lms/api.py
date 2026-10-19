@@ -3586,6 +3586,91 @@ def get_system_preferences():
 		"time_zone": frappe.db.get_single_value("System Settings", "time_zone"),
 		"timezones": get_timezones().get("timezones", []),
 	}
+# ─────────────────────────────────────────────────────────────────────────────
+# Notification APIs
+# ─────────────────────────────────────────────────────────────────────────────
+
+
+@frappe.whitelist()
+def get_notifications(
+	page: int = 1,
+	page_size: int = 20,
+	unread_only: bool = False,
+) -> dict:
+	"""Return paginated Notification Logs for the current user.
+
+	Endpoint:
+		GET /api/method/lms.lms.api.get_notifications
+
+	Query parameters:
+		page        (int, default 1)  – page number, 1-indexed
+		page_size   (int, default 20) – results per page, max 100
+		unread_only (bool, default False) – when truthy return only unread
+
+	Returns::
+
+		{
+			"notifications": [...],
+			"pagination": {
+				"page": 1, "page_size": 20,
+				"total": 42, "unread_count": 5
+			}
+		}
+	"""
+	user = frappe.session.user
+	if user == "Guest":
+		frappe.throw(_("Please login to view notifications."), frappe.PermissionError)
+
+	page = max(1, int(page))
+	page_size = min(max(1, int(page_size)), 100)
+
+	filters: dict = {"for_user": user}
+	if unread_only:
+		filters["read"] = 0
+
+	total = frappe.db.count("Notification Log", filters)
+	unread_count = frappe.db.count("Notification Log", {"for_user": user, "read": 0})
+
+	notifications = frappe.get_all(
+		"Notification Log",
+		filters=filters,
+		fields=[
+			"name",
+			"subject",
+			"email_content",
+			"document_type",
+			"document_name",
+			"from_user",
+			"type",
+			"read",
+			"link",
+			"creation",
+		],
+		order_by="creation desc",
+		limit_start=(page - 1) * page_size,
+		limit_page_length=page_size,
+	)
+
+	# Enrich each notification with sender details
+	for notif in notifications:
+		if notif.get("from_user"):
+			notif["from_user_details"] = frappe.db.get_value(
+				"User",
+				notif["from_user"],
+				["full_name", "user_image", "username"],
+				as_dict=True,
+			)
+
+	return {
+		"notifications": notifications,
+		"pagination": {
+			"page": page,
+			"page_size": page_size,
+			"total": total,
+			"unread_count": unread_count,
+			"total_pages": max(1, -(-total // page_size)),  # ceiling division
+		},
+	}
 
 
 @frappe.whitelist()
@@ -3605,3 +3690,69 @@ def set_system_preferences(language: str = None, time_zone: str = None):
 		frappe.db.set_single_value("System Settings", "time_zone", time_zone)
 
 	frappe.clear_cache()
+	
+def mark_notification_read(name: str) -> dict:
+	"""Mark a single Notification Log as read for the current user.
+
+	Endpoint:
+		POST /api/method/lms.lms.api.mark_notification_read
+
+	Body params:
+		name (str) – the name (primary key) of the Notification Log record
+
+	Returns::
+
+		{"success": True, "name": "<name>"}
+	"""
+	user = frappe.session.user
+	if user == "Guest":
+		frappe.throw(_("Please login."), frappe.PermissionError)
+
+	if not isinstance(name, str) or not name.strip():
+		frappe.throw(_("Notification name is required."))
+
+	name = name.strip()
+
+	doc = frappe.db.get_value(
+		"Notification Log", name, ["name", "for_user", "read"], as_dict=True
+	)
+	if not doc:
+		frappe.throw(_("Notification {0} not found.").format(name), frappe.DoesNotExistError)
+
+	if doc.for_user != user:
+		frappe.throw(
+			_("You do not have permission to mark this notification as read."),
+			frappe.PermissionError,
+		)
+
+	if not doc.read:
+		frappe.db.set_value("Notification Log", name, "read", 1)
+
+	return {"success": True, "name": name}
+
+
+@frappe.whitelist()
+def mark_all_notifications_read() -> dict:
+	"""Mark every unread Notification Log as read for the current user.
+
+	Endpoint:
+		POST /api/method/lms.lms.api.mark_all_notifications_read
+
+	Returns::
+
+		{"success": True, "marked_count": 5}
+	"""
+	user = frappe.session.user
+	if user == "Guest":
+		frappe.throw(_("Please login."), frappe.PermissionError)
+
+	unread = frappe.get_all(
+		"Notification Log",
+		filters={"for_user": user, "read": 0},
+		pluck="name",
+	)
+
+	for notif_name in unread:
+		frappe.db.set_value("Notification Log", notif_name, "read", 1)
+
+	return {"success": True, "marked_count": len(unread)}

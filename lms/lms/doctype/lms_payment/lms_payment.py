@@ -8,7 +8,7 @@ from frappe.model.document import Document
 from frappe.utils import add_days, flt, nowdate
 from pypika import functions as fn
 
-from lms.lms.utils import get_lms_route
+from lms.lms.utils import get_frontend_url, get_lms_route
 
 
 class LMSPayment(Document):
@@ -151,8 +151,10 @@ def send_mail(payment):
 		"title": frappe.db.get_value(
 			payment.payment_for_document_type, payment.payment_for_document, "title"
 		),
-		"link": get_lms_route(
-			f"billing/{payment.payment_for_document_type.split(' ')[-1].lower()}/{payment.payment_for_document}"
+		"link": (
+			f"{get_frontend_url()}/course/{payment.payment_for_document}"
+			if payment.payment_for_document_type == "LMS Course"
+			else f"{get_frontend_url()}/batch/{payment.payment_for_document}"
 		),
 	}
 

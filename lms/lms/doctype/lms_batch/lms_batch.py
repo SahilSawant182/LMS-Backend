@@ -611,6 +611,39 @@ def send_mail(batch, student):
 	)
 
 
+def send_batch_start_today_notification():
+	"""N14 – In-app system notification fired on the day a batch starts for all enrolled students."""
+	batches = frappe.get_all(
+		"LMS Batch",
+		{"start_date": nowdate(), "published": 1},
+		["name", "title", "start_time", "medium"],
+	)
+
+	for batch in batches:
+		students = frappe.get_all("LMS Batch Enrollment", {"batch": batch.name}, pluck="member")
+		if not students:
+			continue
+
+		link = get_lms_route(f"batches/{batch.name}")
+		notification = frappe._dict(
+			{
+				"subject": _("🎓 Your batch {0} starts today! Get ready.").format(frappe.bold(batch.title)),
+				"email_content": _(
+					"Your batch '{0}' is starting today. Log in now and join the session."
+				).format(batch.title),
+				"document_type": "LMS Batch",
+				"document_name": batch.name,
+				"from_user": frappe.session.user,
+				"type": "Alert",
+				"link": link,
+			}
+		)
+		try:
+			make_notification_logs(notification, students)
+		except Exception:
+			frappe.log_error(frappe.get_traceback(), "LMS: Batch start today notification failed")
+
+
 def has_permission(doc, ptype="read", user=None):
 	user = user or frappe.session.user
 	if user == "Guest" and not guest_access_allowed():
@@ -661,3 +694,198 @@ def get_permission_query_conditions(user=None):
 		(batch.published == 1) | batch.name.isin(enrolled) | authored_batch_condition(batch.name, user)
 	)
 	return condition.get_sql(with_namespace=True, quote_char="`" if frappe.db.db_type == "mariadb" else '"')
+	escaped = frappe.db.escape(user)
+	return f"""(`tabLMS Batch`.published = 1 or `tabLMS Batch`.name in (
+		select batch from `tabLMS Batch Enrollment` where member = {escaped}
+	))"""
+
+
+import frappe
+from frappe import _
+
+
+@frappe.whitelist()
+def create_discussion_reply(doctype: str, docname: str, reply: str, title: str = None):
+    # Validate required fields
+    if not doctype or not docname:
+        frappe.throw(_("DocType and document name are required."))
+
+    if not reply or not reply.strip():
+        frappe.throw(_("Reply cannot be empty."))
+
+   
+    # Check whether a Discussion Topic already exists
+    filters = {
+        "reference_doctype": doctype,
+        "reference_docname": docname,
+    }
+
+    topic_name = frappe.db.get_value(
+        "Discussion Topic",
+        filters,
+        "name"
+    )
+
+    # Create Discussion Topic if it does not exist
+    if not topic_name:
+        topic = frappe.new_doc("Discussion Topic")
+        topic.update({
+            "title": title or docname,
+            "reference_doctype": doctype,
+            "reference_docname": docname,
+        })
+        topic.insert()
+
+        topic_name = topic.name
+
+    # Create Discussion Reply
+    discussion_reply = frappe.new_doc("Discussion Reply")
+    discussion_reply.update({
+        "topic": topic_name,
+        "reply": reply,
+    })
+    discussion_reply.insert()
+
+    return {
+        "status": "success",
+        "message": "Discussion reply created successfully",
+        "data": {
+            "topic": topic_name,
+            "doctype": doctype,
+            "docname": docname,
+            "reply_name": discussion_reply.name,
+            "reply": discussion_reply.reply,
+            "owner": discussion_reply.owner,
+            "creation": discussion_reply.creation,
+        }
+    }
+
+import frappe
+from frappe import _
+
+
+@frappe.whitelist()
+def get_discussion_replies():
+    replies = frappe.get_all(
+        "Discussion Reply",
+        fields=[
+            "name",
+            "topic",
+            "owner",
+            "creation",
+            "modified",
+            "reply",
+        ],
+        order_by="creation asc",
+    )
+
+    # Add user details
+    for row in replies:
+        row["user"] = frappe.db.get_value(
+            "User",
+            row.owner,
+            ["full_name", "user_image"],
+            as_dict=True,
+        )
+
+    return {
+        "status": "success",
+        "message": "Discussion replies fetched successfully",
+        "data": replies,
+    }
+
+
+
+@frappe.whitelist()
+def update_discussion_reply(reply_name: str, reply: str):
+    # Check whether the reply exists
+    if not frappe.db.exists("Discussion Reply", reply_name):
+        frappe.throw(_("Discussion Reply not found."))
+
+    if not reply or not reply.strip():
+        frappe.throw(_("Reply cannot be empty."))
+
+    # Get the reply document
+    doc = frappe.get_doc("Discussion Reply", reply_name)
+
+    # Get topic reference details
+    topic_details = frappe.db.get_value(
+        "Discussion Topic",
+        doc.topic,
+        ["reference_doctype", "reference_docname"],
+        as_dict=True,
+    )
+
+    if not topic_details:
+        frappe.throw(_("Discussion Topic not found."))
+
+    # Check access to the topic
+   
+
+    # Only allow the reply owner or a System Manager to edit
+    if doc.owner != frappe.session.user and "System Manager" not in frappe.get_roles():
+        frappe.throw(
+            _("You are not authorized to edit this reply."),
+            frappe.PermissionError,
+        )
+
+    # Update reply
+    doc.reply = reply.strip()
+    doc.save()
+
+    return {
+        "status": "success",
+        "message": "Discussion reply updated successfully",
+        "data": {
+            "name": doc.name,
+            "topic": doc.topic,
+            "reply": doc.reply,
+            "owner": doc.owner,
+            "modified": doc.modified,
+        },
+    }
+
+@frappe.whitelist()
+def delete_discussion_reply(reply_name: str):
+    # Check whether the reply exists
+    if not frappe.db.exists("Discussion Reply", reply_name):
+        frappe.throw(_("Discussion Reply not found."))
+
+    # Get the reply document
+    doc = frappe.get_doc("Discussion Reply", reply_name)
+
+    # Get topic reference details
+    topic_details = frappe.db.get_value(
+        "Discussion Topic",
+        doc.topic,
+        ["reference_doctype", "reference_docname"],
+        as_dict=True,
+    )
+
+    if not topic_details:
+        frappe.throw(_("Discussion Topic not found."))
+
+    # Check access to the topic
+   
+
+    # Only allow the reply owner or a System Manager to delete
+    if doc.owner != frappe.session.user and "System Manager" not in frappe.get_roles():
+        frappe.throw(
+            _("You are not authorized to delete this reply."),
+            frappe.PermissionError,
+        )
+
+    # Delete reply
+    frappe.delete_doc(
+        "Discussion Reply",
+        reply_name,
+    )
+
+    return {
+        "status": "success",
+        "message": "Discussion reply deleted successfully",
+        "data": {
+            "name": reply_name,
+            "topic": doc.topic,
+        },
+    }

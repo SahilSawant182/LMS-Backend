@@ -88,3 +88,119 @@ def check_payments_app():
 		options_property.save()
 
 		return True
+
+
+
+
+@frappe.whitelist()
+def get_lms_settings():
+    """Get LMS Settings."""
+
+    if not frappe.has_permission("LMS Settings", "read"):
+        frappe.throw("Not permitted to read LMS Settings", frappe.PermissionError)
+
+    settings = frappe.get_single("LMS Settings")
+
+    return {
+        "success": True,
+        "data": settings.as_dict()
+    }
+
+@frappe.whitelist(methods=["PUT", "POST"])
+def update_lms_settings():
+    """Update LMS Settings."""
+
+    if frappe.session.user == "Guest":
+        frappe.throw(
+            "Login required to update LMS Settings",
+            frappe.AuthenticationError
+        )
+
+    if not frappe.has_permission("LMS Settings", "write"):
+        frappe.throw(
+            "Not permitted to update LMS Settings",
+            frappe.PermissionError
+        )
+
+    data = frappe.request.get_json(silent=True) or {}
+
+    if not data:
+        frappe.throw("Request body is required")
+
+    settings = frappe.get_single("LMS Settings")
+
+    # Fields that can be updated through this API.
+    allowed_fields = {
+        "allow_guest_access",
+        "prevent_skipping_videos",
+        "send_calendar_invite_for_evaluations",
+        "disable_pwa",
+        "default_home",
+        "unsplash_access_key",
+        "livecode_url",
+        "send_notification_for_published_courses",
+        "send_notification_for_published_batches",
+        "show_day_view",
+        "show_dashboard",
+        "show_courses",
+        "show_students",
+        "show_assessments",
+        "show_live_class",
+        "show_discussions",
+        "show_emails",
+        "enforce_video_completion",
+        "enforce_quiz_completion",
+        "enforce_assignment_completion",
+        "lesson_dwell_time",
+        "user_category",
+        "disable_signup",
+        "custom_signup_content",
+        "courses",
+        "batches",
+        "certified_members",
+        "certifications",
+        "programming_exercises",
+        "jobs",
+        "statistics",
+        "notifications",
+        "sidebar_items",
+        "mentor_request_creation",
+        "mentor_request_status_update",
+        "payment_gateway",
+        "default_currency",
+        "exception_country",
+        "apply_gst",
+        "show_usd_equivalent",
+        "apply_rounding",
+        "send_payment_reminders_for_batch",
+        "send_payment_reminders_for_course",
+        "certification_template",
+        "batch_confirmation_template",
+        "payment_reminder_template",
+        "meta_description",
+        "meta_image",
+        "meta_keywords",
+        "contact_us_email",
+        "contact_us_url",
+        "allow_job_posting"
+    }
+
+    updated_fields = []
+
+    for field, value in data.items():
+        if field in allowed_fields:
+            settings.set(field, value)
+            updated_fields.append(field)
+
+    if not updated_fields:
+        frappe.throw("No valid fields provided for update")
+
+    settings.save()
+    frappe.db.commit()
+
+    return {
+        "success": True,
+        "message": "LMS Settings updated successfully",
+        "updated_fields": updated_fields,
+        "data": settings.as_dict()
+    }

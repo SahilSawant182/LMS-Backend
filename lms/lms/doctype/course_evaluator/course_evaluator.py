@@ -256,3 +256,342 @@ def get_schedule_range_end_date(start_date, batch=None):
 			end_date = getdate(batch_end_date)
 
 	return end_date
+
+
+import json
+import frappe
+from frappe import _
+from frappe.utils import cint, getdate
+
+
+DOCTYPE_EVALUATOR = "Course Evaluator"
+
+
+def get_request_data():
+    """Read JSON or form parameters from the current request."""
+
+    data = {}
+
+    if frappe.request:
+        try:
+            body = frappe.request.get_json(silent=True)
+            if isinstance(body, dict):
+                data.update(body)
+        except Exception:
+            pass
+
+    # Form/query parameters take precedence when supplied.
+    if frappe.form_dict:
+        for key, value in frappe.form_dict.items():
+            if key not in ("cmd", "doctype"):
+                data[key] = value
+
+    return data
+
+
+def parse_schedule(schedule):
+    """Convert the schedule payload into a list of child-table rows."""
+
+    if schedule is None or schedule == "":
+        return None
+
+    if isinstance(schedule, str):
+        try:
+            schedule = json.loads(schedule)
+        except json.JSONDecodeError:
+            frappe.throw(_("Schedule must be valid JSON."))
+
+    if not isinstance(schedule, list):
+        frappe.throw(_("Schedule must be a JSON array."))
+
+    for row in schedule:
+        if not isinstance(row, dict):
+            frappe.throw(_("Each schedule entry must be a JSON object."))
+
+        if "name" in row or "parent" in row or "parenttype" in row:
+            frappe.throw(
+                _("Do not provide child-table system fields in schedule.")
+            )
+
+    return schedule
+
+
+def validate_evaluator_data(data, creating=False):
+    """Validate the evaluator, dates, and schedule."""
+
+    if creating and not data.get("evaluator"):
+        frappe.throw(_("Evaluator is required."))
+
+    evaluator = data.get("evaluator")
+
+    if evaluator and not frappe.db.exists("User", evaluator):
+        frappe.throw(
+            _("User {0} does not exist.").format(evaluator)
+        )
+
+    start = data.get("unavailable_from")
+    end = data.get("unavailable_to")
+
+    if start and end and getdate(start) > getdate(end):
+        frappe.throw(
+            _("Unavailable From cannot be later than Unavailable To.")
+        )
+
+
+def evaluator_response(doc):
+    """Format the evaluator document for API responses."""
+
+    return {
+        "name": doc.name,
+        "evaluator": doc.evaluator,
+        "full_name": doc.full_name,
+        "username": doc.username,
+        "user_image": doc.user_image,
+        "unavailable_from": doc.unavailable_from,
+        "unavailable_to": doc.unavailable_to,
+        "schedule": [
+            row.as_dict()
+            for row in doc.schedule
+        ],
+        "owner": doc.owner,
+        "creation": doc.creation,
+        "modified": doc.modified,
+    }
+
+
+@frappe.whitelist(methods=["POST"])
+def create_course_evaluator(
+    evaluator=None,
+    schedule=None,
+    unavailable_from=None,
+    unavailable_to=None,
+    **kwargs
+):
+    """Create a Course Evaluator."""
+
+    data = get_request_data()
+
+    if evaluator is not None:
+        data["evaluator"] = evaluator
+
+    if schedule is not None:
+        data["schedule"] = schedule
+
+    if unavailable_from is not None:
+        data["unavailable_from"] = unavailable_from
+
+    if unavailable_to is not None:
+        data["unavailable_to"] = unavailable_to
+
+    data.update(kwargs)
+
+    schedule_rows = parse_schedule(data.get("schedule"))
+
+    validate_evaluator_data(data, creating=True)
+
+    user = frappe.db.get_value(
+        "User",
+        data["evaluator"],
+        ["full_name", "username", "user_image"],
+        as_dict=True,
+    )
+
+    doc = frappe.get_doc({
+        "doctype": DOCTYPE_EVALUATOR,
+        "evaluator": data["evaluator"],
+        "full_name": user.full_name,
+        "username": user.username,
+        "user_image": user.user_image,
+        "unavailable_from": data.get("unavailable_from"),
+        "unavailable_to": data.get("unavailable_to"),
+    })
+
+    if schedule_rows is not None:
+        doc.set("schedule", schedule_rows)
+
+    doc.insert()
+
+    return {
+        "success": True,
+        "message": "Course evaluator created successfully.",
+        "data": evaluator_response(doc),
+    }
+
+
+@frappe.whitelist(methods=["GET"])
+def get_course_evaluator(name):
+    """Get one evaluator by document name."""
+
+    if not frappe.db.exists(DOCTYPE_EVALUATOR, name):
+        frappe.throw(
+            _("Course Evaluator {0} does not exist.").format(name),
+            frappe.DoesNotExistError,
+        )
+
+    doc = frappe.get_doc(DOCTYPE_EVALUATOR, name)
+    doc.check_permission("read")
+
+    return {
+        "success": True,
+        "data": evaluator_response(doc),
+    }
+
+
+@frappe.whitelist(methods=["GET"])
+def get_course_evaluator_list(
+    evaluator=None,
+    txt=None,
+    limit_start=0,
+    limit_page_length=20,
+):
+    """Get a permission-filtered evaluator list."""
+
+    filters = {}
+
+    if evaluator:
+        filters["evaluator"] = evaluator
+
+    or_filters = None
+
+    if txt:
+        or_filters = [
+            ["Course Evaluator", "evaluator", "like", f"%{txt}%"],
+            ["Course Evaluator", "full_name", "like", f"%{txt}%"],
+            ["Course Evaluator", "username", "like", f"%{txt}%"],
+        ]
+
+    rows = frappe.get_list(
+        DOCTYPE_EVALUATOR,
+        filters=filters,
+        or_filters=or_filters,
+        fields=[
+            "name",
+            "evaluator",
+            "full_name",
+            "username",
+            "user_image",
+            "unavailable_from",
+            "unavailable_to",
+            "owner",
+            "creation",
+            "modified",
+        ],
+        order_by="modified desc",
+        start=max(cint(limit_start), 0),
+        page_length=min(max(cint(limit_page_length), 1), 100),
+    )
+
+    return {
+        "success": True,
+        "count": len(rows),
+        "data": rows,
+    }
+
+
+@frappe.whitelist(methods=["PUT", "PATCH", "POST"])
+def update_course_evaluator(
+    name,
+    evaluator=None,
+    schedule=None,
+    unavailable_from=None,
+    unavailable_to=None,
+    **kwargs
+):
+    """Update a Course Evaluator and its schedule."""
+
+    if not frappe.db.exists(DOCTYPE_EVALUATOR, name):
+        frappe.throw(
+            _("Course Evaluator {0} does not exist.").format(name),
+            frappe.DoesNotExistError,
+        )
+
+    doc = frappe.get_doc(DOCTYPE_EVALUATOR, name)
+    doc.check_permission("write")
+
+    data = get_request_data()
+
+    if evaluator is not None:
+        data["evaluator"] = evaluator
+
+    if schedule is not None:
+        data["schedule"] = schedule
+
+    if unavailable_from is not None:
+        data["unavailable_from"] = unavailable_from
+
+    if unavailable_to is not None:
+        data["unavailable_to"] = unavailable_to
+
+    data.update(kwargs)
+
+    # Evaluator is also the document's naming field.
+    # Changing it would change the identity of the record.
+    if data.get("evaluator") and data["evaluator"] != doc.evaluator:
+        frappe.throw(
+            _("Changing the evaluator is not supported by this API.")
+        )
+
+    validate_evaluator_data({
+        "evaluator": doc.evaluator,
+        "unavailable_from": data.get(
+            "unavailable_from", doc.unavailable_from
+        ),
+        "unavailable_to": data.get(
+            "unavailable_to", doc.unavailable_to
+        ),
+    })
+
+    if "unavailable_from" in data:
+        doc.unavailable_from = data["unavailable_from"] or None
+
+    if "unavailable_to" in data:
+        doc.unavailable_to = data["unavailable_to"] or None
+
+    if "schedule" in data:
+        schedule_rows = parse_schedule(data["schedule"])
+
+        if schedule_rows is not None:
+            doc.set("schedule", schedule_rows)
+
+    # Refresh profile fields from the linked User.
+    user = frappe.db.get_value(
+        "User",
+        doc.evaluator,
+        ["full_name", "username", "user_image"],
+        as_dict=True,
+    )
+
+    if user:
+        doc.full_name = user.full_name
+        doc.username = user.username
+        doc.user_image = user.user_image
+
+    doc.save()
+
+    return {
+        "success": True,
+        "message": "Course evaluator updated successfully.",
+        "data": evaluator_response(doc),
+    }
+
+
+@frappe.whitelist(methods=["DELETE", "POST"])
+def delete_course_evaluator(name):
+    """Delete a Course Evaluator."""
+
+    if not frappe.db.exists(DOCTYPE_EVALUATOR, name):
+        frappe.throw(
+            _("Course Evaluator {0} does not exist.").format(name),
+            frappe.DoesNotExistError,
+        )
+
+    doc = frappe.get_doc(DOCTYPE_EVALUATOR, name)
+    doc.check_permission("delete")
+
+    doc.delete()
+
+    return {
+        "success": True,
+        "message": "Course evaluator deleted successfully.",
+        "name": name,
+    }

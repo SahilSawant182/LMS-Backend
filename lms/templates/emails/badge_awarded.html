@@ -1,0 +1,28 @@
+<div>
+	<p>{{ _(\"Hi {0},\").format(student_name) }}</p>
+	<br>
+	<p>
+		{{ _(\"Congratulations! You have been awarded the\") }}
+		<strong>{{ badge_title }}</strong> {{ _(\"badge!\") }}
+	</p>
+	<br>
+	{% if badge_image %}
+	<p style="text-align: center; margin: 20px 0;">
+		<img src="{{ badge_image }}" alt="{{ badge_title }}" style="max-width: 150px; max-height: 150px;" />
+	</p>
+	{% endif %}
+	<br>
+	{% if badge_description %}
+	<p><strong>{{ _(\"About this badge:\") }}</strong> {{ badge_description }}</p>
+	<br>
+	{% endif %}
+	<p>{{ _(\"Keep up the great work and continue your learning journey!\") }}</p>
+	<br>
+	<p>{{ _(\"View your profile to see all your earned badges:\") }}</p>
+	<p style="margin: 15px 0px;">
+		<a href="{{ profile_link }}" rel="nofollow" class="btn btn-primary">{{ _(\"View My Profile\") }}</a>
+	</p>
+	<br>
+	<p>{{ _(\"Thanks and Regards\") }},</p>
+	<p>{{ app_name }}</p>
+</div>

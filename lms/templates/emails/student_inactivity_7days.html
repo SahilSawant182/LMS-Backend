@@ -1,0 +1,80 @@
+<!-- N60: 7-Day Inactivity Re-engagement Email -->
+<div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #ffffff;">
+
+  <!-- Header -->
+  <div style="background: linear-gradient(135deg, #312e81 0%, #4338ca 50%, #6366f1 100%); border-radius: 16px 16px 0 0; padding: 40px 36px 32px; text-align: center;">
+    <div style="display:inline-block; background: rgba(255,255,255,0.15); border-radius: 50%; width: 72px; height: 72px; line-height: 72px; font-size: 36px; margin-bottom: 16px;">👋</div>
+    <h1 style="color: #ffffff; font-size: 24px; font-weight: 700; margin: 0 0 8px; letter-spacing: -0.5px;">We Miss You!</h1>
+    <p style="color: rgba(255,255,255,0.80); font-size: 14px; margin: 0;">It's been 7 days since your last session</p>
+  </div>
+
+  <!-- Body -->
+  <div style="background: #f8fafc; padding: 36px 36px 28px; border-left: 1px solid #e2e8f0; border-right: 1px solid #e2e8f0;">
+
+    <p style="color: #1e293b; font-size: 16px; margin: 0 0 20px;">Hi <strong>{{ student_name }}</strong>,</p>
+
+    <p style="color: #475569; font-size: 15px; line-height: 1.6; margin: 0 0 24px;">
+      We noticed you haven't visited us in <strong>7 days</strong>. Your course
+      <strong style="color: #4338ca;">{{ course_title }}</strong>
+      is waiting for you — and you were doing so well! 🌟
+    </p>
+
+    <!-- Progress Card -->
+    <div style="background: #ffffff; border-radius: 12px; border: 1px solid #c7d2fe; padding: 20px 24px; margin-bottom: 20px; box-shadow: 0 1px 4px rgba(99,102,241,0.08);">
+      <div style="font-size: 11px; font-weight: 700; letter-spacing: 1px; color: #6366f1; text-transform: uppercase; margin-bottom: 16px;">📊 Your Progress</div>
+      <table style="width: 100%; border-collapse: collapse;">
+        <tr>
+          <td style="padding: 8px 0; color: #64748b; font-size: 14px; width: 45%;">Course</td>
+          <td style="padding: 8px 0; color: #1e293b; font-size: 14px; font-weight: 600;">{{ course_title }}</td>
+        </tr>
+        <tr>
+          <td style="padding: 8px 0; color: #64748b; font-size: 14px; border-top: 1px solid #f1f5f9;">Progress</td>
+          <td style="padding: 8px 0; color: #4338ca; font-size: 14px; font-weight: 700; border-top: 1px solid #f1f5f9;">{{ progress }}% completed</td>
+        </tr>
+        <tr>
+          <td style="padding: 8px 0; color: #64748b; font-size: 14px; border-top: 1px solid #f1f5f9;">Last Active</td>
+          <td style="padding: 8px 0; color: #1e293b; font-size: 14px; border-top: 1px solid #f1f5f9;">{{ last_active }}</td>
+        </tr>
+      </table>
+      <!-- Progress Bar (table-based, no Jinja in CSS) -->
+      <table style="width: 100%; border-collapse: collapse; margin-top: 16px;" cellpadding="0" cellspacing="0">
+        <tr>
+          <td style="background: linear-gradient(90deg, #4338ca, #6366f1); height: 8px; border-radius: 8px 0 0 8px; width: {{ progress }}%;">&nbsp;</td>
+          <td style="background: #e0e7ff; height: 8px; border-radius: 0 8px 8px 0;">&nbsp;</td>
+        </tr>
+      </table>
+      <p style="color: #6366f1; font-size: 12px; margin: 8px 0 0; text-align: right;">{{ progress }}% done — keep going!</p>
+    </div>
+
+    <!-- Motivation Box -->
+    <div style="background: linear-gradient(135deg, #f0f0ff 0%, #faf5ff 100%); border-radius: 12px; padding: 20px 24px; margin-bottom: 28px; border-left: 4px solid #818cf8;">
+      <div style="font-size: 14px; font-weight: 700; color: #4338ca; margin-bottom: 10px;">💡 Just 15 minutes a day can make all the difference</div>
+      <p style="color: #475569; font-size: 14px; line-height: 1.6; margin: 0;">
+        Consistent learners are 5x more likely to complete their courses and earn certificates.
+        Even a short session keeps your momentum going!
+      </p>
+    </div>
+
+    <!-- CTA Button -->
+    <div style="text-align: center; margin-bottom: 20px;">
+      <a href="{{ site_url }}{{ course_link }}" style="display: inline-block; background: linear-gradient(135deg, #312e81 0%, #6366f1 100%); color: #ffffff; text-decoration: none; font-size: 15px; font-weight: 700; padding: 14px 36px; border-radius: 10px; letter-spacing: 0.3px;">
+        🚀 Continue Learning
+      </a>
+    </div>
+
+    <p style="color: #94a3b8; font-size: 13px; text-align: center; margin: 0;">
+      Or visit: <a href="{{ site_url }}{{ course_link }}" style="color: #6366f1;">{{ site_url }}{{ course_link }}</a>
+    </p>
+
+  </div>
+
+  <!-- Footer -->
+  <div style="background: #312e81; border-radius: 0 0 16px 16px; padding: 24px 36px; text-align: center;">
+    <p style="color: rgba(255,255,255,0.7); font-size: 13px; margin: 0 0 8px;">Your goals are worth it — keep going! 💪</p>
+    <p style="color: rgba(255,255,255,0.45); font-size: 12px; margin: 0;">{{ app_name }} &bull; <a href="{{ site_url }}" style="color: rgba(255,255,255,0.45); text-decoration: none;">{{ site_url }}</a></p>
+    <p style="color: rgba(255,255,255,0.3); font-size: 11px; margin: 8px 0 0;">
+      <a href="{{ site_url }}/update-profile" style="color: rgba(255,255,255,0.3); text-decoration: none;">Manage Email Preferences</a>
+    </p>
+  </div>
+
+</div>

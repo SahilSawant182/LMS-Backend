@@ -1,0 +1,251 @@
+{
+ "actions": [],
+ "allow_bulk_edit": 1,
+ "allow_rename": 1,
+ "autoname": "naming_series:",
+ "creation": "2026-10-13 00:00:00",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "naming_series",
+  "instructor",
+  "col_h1",
+  "instructor_name",
+  "status",
+  "payout_sheet",
+  "billing_cycle",
+  "period_section",
+  "start_date",
+  "col_p1",
+  "end_date",
+  "fin_section",
+  "gross_sales",
+  "platform_commission_rate",
+  "col_f1",
+  "platform_commission",
+  "gst_on_commission",
+  "ded_section",
+  "refunds",
+  "net_earnings",
+  "col_d1",
+  "tds_rate",
+  "tds_amount",
+  "net_payout",
+  "pay_section",
+  "paid_on",
+  "col_pay1",
+  "payment_reference",
+  "payment_mode"
+ ],
+ "fields": [
+  {
+   "fieldname": "naming_series",
+   "fieldtype": "Select",
+   "label": "Series",
+   "options": "INSTR-BILL-.YYYY.-.MM.-"
+  },
+  {
+   "fieldname": "instructor",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Instructor",
+   "options": "User",
+   "reqd": 1
+  },
+  {
+   "fieldname": "col_h1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "instructor_name",
+   "fieldtype": "Data",
+   "label": "Instructor Name",
+   "read_only": 1
+  },
+  {
+   "default": "Draft",
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Status",
+   "options": "Draft\nApproved\nPaid\nHold\nCancelled"
+  },
+  {
+   "fieldname": "payout_sheet",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Payout Sheet",
+   "options": "LMS Instructor Payout Sheet"
+  },
+  {
+   "fieldname": "billing_cycle",
+   "fieldtype": "Select",
+   "label": "Billing Cycle",
+   "options": "Monthly\nWeekly\nFortnightly\nQuarterly"
+  },
+  {
+   "fieldname": "period_section",
+   "fieldtype": "Section Break",
+   "label": "Billing Period"
+  },
+  {
+   "fieldname": "start_date",
+   "fieldtype": "Date",
+   "label": "Start Date"
+  },
+  {
+   "fieldname": "col_p1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "end_date",
+   "fieldtype": "Date",
+   "label": "End Date"
+  },
+  {
+   "fieldname": "fin_section",
+   "fieldtype": "Section Break",
+   "label": "Financial Breakdown"
+  },
+  {
+   "fieldname": "gross_sales",
+   "fieldtype": "Currency",
+   "in_list_view": 1,
+   "label": "Gross Sales (Rs.)"
+  },
+  {
+   "fieldname": "platform_commission_rate",
+   "fieldtype": "Percent",
+   "label": "Commission Rate (%)"
+  },
+  {
+   "fieldname": "col_f1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "platform_commission",
+   "fieldtype": "Currency",
+   "label": "Platform Commission (Rs.)"
+  },
+  {
+   "fieldname": "gst_on_commission",
+   "fieldtype": "Currency",
+   "label": "GST on Commission @18% (Rs.)"
+  },
+  {
+   "fieldname": "ded_section",
+   "fieldtype": "Section Break",
+   "label": "Deductions"
+  },
+  {
+   "fieldname": "refunds",
+   "fieldtype": "Currency",
+   "label": "Refunds / Reversals (Rs.)"
+  },
+  {
+   "fieldname": "net_earnings",
+   "fieldtype": "Currency",
+   "in_list_view": 1,
+   "label": "Net Earnings Before TDS (Rs.)"
+  },
+  {
+   "fieldname": "col_d1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "tds_rate",
+   "fieldtype": "Percent",
+   "label": "TDS Rate (%)"
+  },
+  {
+   "fieldname": "tds_amount",
+   "fieldtype": "Currency",
+   "label": "TDS Deducted (Rs.)"
+  },
+  {
+   "bold": 1,
+   "fieldname": "net_payout",
+   "fieldtype": "Currency",
+   "in_list_view": 1,
+   "label": "Net Payout (Rs.)"
+  },
+  {
+   "fieldname": "pay_section",
+   "fieldtype": "Section Break",
+   "label": "Payment Information"
+  },
+  {
+   "fieldname": "paid_on",
+   "fieldtype": "Date",
+   "label": "Paid On"
+  },
+  {
+   "fieldname": "col_pay1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "payment_reference",
+   "fieldtype": "Data",
+   "label": "Payment Reference / UTR"
+  },
+  {
+   "fieldname": "payment_mode",
+   "fieldtype": "Select",
+   "label": "Payment Mode",
+   "options": "\nBank Transfer\nNEFT\nIMPS\nRTGS\nRazorpayX\nUPI\nManual\nWire Transfer"
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-10-13 15:01:10.730133",
+ "modified_by": "Administrator",
+ "module": "LMS",
+ "name": "LMS Instructor Billing",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Administrator",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Instructor",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}

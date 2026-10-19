@@ -42,6 +42,9 @@ from lms.lms.doctype.lms_enrollment.lms_enrollment import (
 	update_program_progress,
 )
 from lms.lms.md import find_macros
+from bs4 import BeautifulSoup
+from frappe import _
+from frappe.utils import cstr
 
 RE_SLUG_NOTALLOWED = re.compile("[^a-z0-9]+")
 LMS_ROLES = ["Moderator", "Course Creator", "Batch Evaluator", "LMS Student"]
@@ -56,6 +59,18 @@ def get_lms_path():
 
 def get_lms_route(path=""):
 	base = f"/{get_lms_path()}"
+	if not path:
+		return base
+	return f"{base}/{path.lstrip('/')}"
+
+
+def get_frontend_url(path=""):
+	"""Returns the full URL to the frontend UI (https://lms.stridenex.ai)."""
+	base = (
+		frappe.conf.get("frontend_url")
+		or frappe.db.get_single_value("LMS Settings", "frontend_url")
+		or "https://lms.stridenex.ai"
+	).rstrip("/")
 	if not path:
 		return base
 	return f"{base}/{path.lstrip('/')}"
@@ -157,19 +172,59 @@ def create_user_document(
 		roles = ["LMS Student"]
 	for role in roles:
 		user_doc.append("roles", {"role": role})
-	user_doc.insert(ignore_permissions=ignore_permissions)
+	user_doc.insert()
+	send_student_welcome_email(user_doc)
 	return user_doc
 
 
-def create_user(
-	email,
-	first_name=None,
-	last_name=None,
-	full_name=None,
-	user_image=None,
-	roles=None,
-	ignore_permissions=False,
-):
+def send_student_welcome_email(user_doc):
+	"""N68 – Send branded LMS welcome email to newly created student."""
+	outgoing = frappe.get_cached_value(
+		"Email Account", {"default_outgoing": 1, "enable_outgoing": 1}, "name"
+	)
+	if not (outgoing or frappe.conf.get("mail_login")):
+		return
+
+	student_name = user_doc.full_name or user_doc.first_name or user_doc.email
+	app_name = "Stridenex-LMS"
+	frontend_url = get_frontend_url()
+	join_date = frappe.utils.format_date(user_doc.creation or nowdate(), "medium")
+
+	set_password_link = None
+	try:
+		if getattr(user_doc, "reset_password_key", None):
+			set_password_link = f"{frontend_url}/update-password?key={user_doc.reset_password_key}"
+		else:
+			set_password_link = f"{frontend_url}/forgot-password"
+	except Exception:
+		set_password_link = f"{frontend_url}/forgot-password"
+
+	subject = _("Welcome to {0}, {1}! 🌟").format(app_name, student_name)
+	args = {
+		"student_name": student_name,
+		"student_email": user_doc.email,
+		"join_date": join_date,
+		"site_url": frontend_url,
+		"explore_courses_link": f"{frontend_url}/courses",
+		"app_name": app_name,
+		"set_password_link": set_password_link,
+	}
+
+	try:
+		frappe.sendmail(
+			recipients=user_doc.email,
+			subject=subject,
+			template="student_welcome",
+			args=args,
+			header=[subject, "blue"],
+			retry=3,
+		)
+	except Exception:
+		frappe.log_error(frappe.get_traceback(), "LMS: Student welcome email failed")
+
+
+
+def create_user(email, first_name=None, last_name=None, full_name=None, user_image=None, roles=None):
 	validate_email_address(email, True)
 	print(email)
 	print(frappe.db.exists("User", email))
@@ -3743,3 +3798,39 @@ def sanitize_json(node):
 	if isinstance(node, str) and ("<" in node or ">" in node):
 		return sanitize_html(node, always_sanitize=True)
 	return node
+
+def gen_response(status, message, data=None):
+    if data is None:
+        data = []
+
+    frappe.response["http_status_code"] = status
+    frappe.response["status"] = status
+
+    if status == 500:
+        frappe.response["message"] = BeautifulSoup(str(message)).get_text()
+    else:
+        frappe.response["message"] = message
+
+    frappe.response["data"] = data
+
+
+def exception_handel(e):
+    frappe.log_error(title="Backend Error", message=frappe.get_traceback())
+    if hasattr(e, "http_status_code"):
+        return gen_response(e.http_status_code, cstr(e))
+    else:
+        return gen_response(500, cstr(e))
+
+def generate_key(user):
+    user_details = frappe.get_doc("User", user)
+    api_secret = api_key = ""
+    if not user_details.api_key and not user_details.api_secret:
+        api_secret = frappe.generate_hash(length=15)
+        api_key = frappe.generate_hash(length=15)
+        user_details.api_key = api_key
+        user_details.api_secret = api_secret
+        user_details.save(ignore_permissions=True)
+    else:
+        api_secret = user_details.get_password("api_secret")
+        api_key = user_details.get("api_key")
+    return {"api_secret": api_secret, "api_key": api_key}

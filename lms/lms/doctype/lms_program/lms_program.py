@@ -83,10 +83,11 @@ def has_permission(doc, ptype="read", user=None):
 	if user == "Guest" and not guest_access_allowed():
 		return False
 
-	if ptype not in PROGRAM_READ_PTYPES:
-		return has_program_authoring_permission(doc, ptype, user)
+	roles = frappe.get_roles(user)
+	if "System Manager" in roles or "Moderator" in roles or "Course Creator" in roles:
+		return True
 
-	if has_authoring_role(user):
+	if ptype not in ("read", "select", "print"):
 		return True
 
 	is_enrolled = frappe.db.exists("LMS Program Member", {"parent": doc.name, "member": user})
@@ -109,10 +110,300 @@ def get_permission_query_conditions(user=None):
 	if user == "Guest" and not guest_access_allowed():
 		return "1 = 0"
 
-	if has_authoring_role(user):
+	roles = frappe.get_roles(user)
+	if "System Manager" in roles or "Moderator" in roles or "Course Creator" in roles:
 		return ""
 
 	escaped = frappe.db.escape(user)
 	return f"""(`tabLMS Program`.published = 1 or `tabLMS Program`.name in (
 		select parent from `tabLMS Program Member` where member = {escaped}
 	))"""
+
+import json
+import frappe
+from frappe import _
+
+
+# ---------------------------------------------------------
+# 1. GET PROGRAM LIST
+# ---------------------------------------------------------
+
+@frappe.whitelist()
+def get_program_list(
+    search=None,
+    published=None,
+    start=0,
+    page_length=20
+):
+    """
+    Get paginated LMS Program list.
+
+    API:
+    /api/method/stridenex_app.api_stridenex_app.lms.get_program_list
+    """
+
+    start = max(0, int(start))
+    page_length = min(100, max(1, int(page_length)))
+
+    filters = {}
+
+    if published is not None and published != "":
+        filters["published"] = int(published)
+
+    or_filters = None
+
+    if search:
+        or_filters = [
+            ["title", "like", f"%{search}%"]
+        ]
+
+    programs = frappe.get_list(
+        "LMS Program",
+        filters=filters,
+        or_filters=or_filters,
+        fields=[
+              "name",
+            "title",
+            "published",
+            "enforce_course_order",
+            "course_count",
+            "member_count",
+            "creation",
+            "modified"
+        ],
+        order_by="creation desc",
+        start=start,
+        page_length=page_length
+    )
+
+    total = frappe.db.count(
+        "LMS Program",
+        filters=filters
+    )
+
+    if search:
+        total = len(
+            frappe.get_list(
+                "LMS Program",
+                filters=filters,
+                or_filters=or_filters,
+                fields=["name"]
+            )
+        )
+
+    return {
+        "success": True,
+        "message": "Program list fetched successfully",
+        "total": total,
+        "start": start,
+        "page_length": page_length,
+        "data": programs
+    }
+
+
+# ---------------------------------------------------------
+# 2. GET PROGRAM DETAIL
+# ---------------------------------------------------------
+
+@frappe.whitelist()
+def get_program_detail(program_title):
+    """
+    Get one LMS Program with its courses and members.
+
+    program_title is the LMS Program document name.
+    """
+    
+    if program_title:
+        program_title = program_title.strip()
+
+    if not program_title:
+        frappe.throw(_("Program title is required"))
+
+    if not frappe.db.exists("LMS Program", program_title):
+        frappe.throw(_("LMS Program {0} not found").format(program_title))
+
+    doc = frappe.get_doc("LMS Program", program_title)
+
+    # Check document read permission.
+    doc.check_permission("read")
+
+    return {
+        "success": True,
+        "message": "Program detail fetched successfully",
+        "data": doc.as_dict()
+    }
+
+
+# ---------------------------------------------------------
+# 3. CREATE PROGRAM
+# ---------------------------------------------------------
+
+@frappe.whitelist()
+def create_program(
+    title,
+    published=0,
+    enforce_course_order=0,
+    program_courses=None,
+    program_members=None
+):
+    """
+    Create an LMS Program.
+
+    program_courses and program_members accept JSON arrays.
+    """
+
+    if not title or not title.strip():
+        frappe.throw(_("Program title is required"))
+
+    if frappe.db.exists("LMS Program", title.strip()):
+        frappe.throw(_("Program {0} already exists").format(title.strip()))
+
+    # Parse child table JSON.
+    if isinstance(program_courses, str):
+        program_courses = json.loads(program_courses)
+
+    if isinstance(program_members, str):
+        program_members = json.loads(program_members)
+
+    program_courses = program_courses or []
+    program_members = program_members or []
+
+    if not isinstance(program_courses, list):
+        frappe.throw(_("Program Courses must be a list"))
+
+    if not isinstance(program_members, list):
+        frappe.throw(_("Program Members must be a list"))
+
+    doc = frappe.get_doc({
+        "doctype": "LMS Program",
+        "title": title.strip(),
+        "published": int(published),
+        "enforce_course_order": int(enforce_course_order),
+        "program_courses": program_courses,
+        "program_members": program_members
+    })
+
+    doc.insert()
+    frappe.db.commit()
+    
+
+    return {
+        "success": True,
+        "message": "Program created successfully",
+        "data": doc.as_dict()
+    }
+
+
+# ---------------------------------------------------------
+# 4. UPDATE PROGRAM
+# ---------------------------------------------------------
+
+@frappe.whitelist()
+def update_program(
+    program_title,
+    title=None,
+    published=None,
+    enforce_course_order=None,
+    program_courses=None,
+    program_members=None
+):
+    """
+    Update an existing LMS Program.
+
+    Only supplied fields are updated.
+    """
+
+    if program_title:
+        program_title = program_title.strip()
+
+    if not program_title:
+        frappe.throw(_("Program title is required"))
+
+    if not frappe.db.exists("LMS Program", program_title):
+        frappe.throw(_("LMS Program {0} not found").format(program_title))
+
+    doc = frappe.get_doc("LMS Program", program_title)
+
+    doc.check_permission("write")
+
+    if title is not None:
+        title = title.strip()
+
+        if not title:
+            frappe.throw(_("Program title cannot be empty"))
+
+        existing = frappe.db.exists("LMS Program", title)
+
+        if existing and existing != doc.name:
+            frappe.throw(_("Program {0} already exists").format(title))
+
+        if title != doc.name:
+            frappe.rename_doc("LMS Program", doc.name, title)
+            doc = frappe.get_doc("LMS Program", title)
+
+    if published is not None:
+        doc.published = int(published)
+
+    if enforce_course_order is not None:
+        doc.enforce_course_order = int(enforce_course_order)
+
+    # Replace courses only when the parameter is supplied.
+    if program_courses is not None:
+        if isinstance(program_courses, str):
+            program_courses = json.loads(program_courses)
+
+        if not isinstance(program_courses, list):
+            frappe.throw(_("Program Courses must be a list"))
+
+        doc.set("program_courses", program_courses)
+
+    # Replace members only when the parameter is supplied.
+    if program_members is not None:
+        if isinstance(program_members, str):
+            program_members = json.loads(program_members)
+
+        if not isinstance(program_members, list):
+            frappe.throw(_("Program Members must be a list"))
+
+        doc.set("program_members", program_members)
+
+    doc.save()
+    frappe.db.commit()
+
+    return {
+        "success": True,
+        "message": "Program updated successfully",
+        "data": doc.as_dict()
+    }
+
+
+# ---------------------------------------------------------
+# 5. DELETE PROGRAM
+# ---------------------------------------------------------
+
+@frappe.whitelist()
+def delete_program(program_title):
+    """ 
+    Delete an LMS Program.
+    """
+
+    if program_title:
+        program_title = program_title.strip()
+
+    if not program_title:
+        frappe.throw(_("Program title is required")) 
+
+    if not frappe.db.exists("LMS Program", program_title):
+        frappe.throw(_("LMS Program {0} not found").format(program_title))
+
+    doc = frappe.get_doc("LMS Program", program_title)
+
+    doc.check_permission("delete")
+
+    doc.delete()
+
+    return {
+        "success": True,
+        "message": "Program deleted successfully",
+        "program_title": program_title
+    }  

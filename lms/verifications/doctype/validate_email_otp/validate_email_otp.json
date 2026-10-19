@@ -1,0 +1,88 @@
+{
+ "actions": [],
+ "allow_bulk_edit": 1,
+ "allow_rename": 1,
+ "autoname": "field:email",
+ "creation": "2026-10-10 13:48:32.767898",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "otp",
+  "column_break_nglu",
+  "column_break_xrzd",
+  "expiry_time",
+  "email",
+  "column_break_cdkh",
+  "amended_from"
+ ],
+ "fields": [
+  {
+   "fieldname": "otp",
+   "fieldtype": "Int",
+   "label": "OTP"
+  },
+  {
+   "fieldname": "column_break_nglu",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "column_break_xrzd",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "expiry_time",
+   "fieldtype": "Datetime",
+   "label": "Expiry Time"
+  },
+  {
+   "fieldname": "email",
+   "fieldtype": "Data",
+   "label": "Email",
+   "unique": 1
+  },
+  {
+   "fieldname": "column_break_cdkh",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "amended_from",
+   "fieldtype": "Link",
+   "label": "Amended From",
+   "no_copy": 1,
+   "options": "Validate Email OTP",
+   "print_hide": 1,
+   "read_only": 1,
+   "search_index": 1
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "is_submittable": 1,
+ "links": [],
+ "modified": "2026-10-10 14:15:55.757123",
+ "modified_by": "Administrator",
+ "module": "Verifications",
+ "name": "Validate Email OTP",
+ "naming_rule": "By fieldname",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "submit": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": []
+}

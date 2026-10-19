@@ -6,6 +6,7 @@ from datetime import timedelta
 import frappe
 import requests
 from frappe import _
+from frappe.desk.doctype.notification_log.notification_log import make_notification_logs
 from frappe.model.document import Document
 from frappe.query_builder import Bracket
 from frappe.utils import cint, format_date, format_time, get_datetime, nowdate
@@ -18,11 +19,53 @@ from lms.lms.permissions import authored_batch_condition, can_author_batch, is_s
 class GoogleCalendarMissingError(frappe.ValidationError):
 	"""No usable Google Calendar for a live class. Its own type, so the live class
 	form can offer to open the calendar settings instead of only showing text."""
+from lms.lms.utils import get_lms_route
 
 
 class LMSLiveClass(Document):
 	def after_insert(self):
 		self.create_calendar_event()
+		self.notify_students_of_new_live_class()
+
+	def notify_students_of_new_live_class(self):
+		"""N45 – In-app notification to enrolled batch students when a new live class is scheduled."""
+		if not self.batch_name:
+			return
+
+		students = frappe.get_all(
+			"LMS Batch Enrollment", {"batch": self.batch_name}, pluck="member"
+		)
+		if not students:
+			return
+
+		batch_title = frappe.db.get_value("LMS Batch", self.batch_name, "title") or self.batch_name
+		link = get_lms_route(f"batches/{self.batch_name}")
+
+		notification = frappe._dict(
+			{
+				"subject": _("📹 New live class scheduled: {0} in batch {1}").format(
+					frappe.bold(self.title), frappe.bold(batch_title)
+				),
+				"email_content": _(
+					"A new live class '{0}' has been scheduled on {1} at {2} for your batch '{3}'. "
+					"Make sure to mark it in your calendar!"
+				).format(
+					self.title,
+					format_date(self.date, "medium"),
+					format_time(self.time, "hh:mm a"),
+					batch_title,
+				),
+				"document_type": "LMS Live Class",
+				"document_name": self.name,
+				"from_user": frappe.session.user,
+				"type": "Alert",
+				"link": link,
+			}
+		)
+		try:
+			make_notification_logs(notification, students)
+		except Exception:
+			frappe.log_error(frappe.get_traceback(), "LMS: Live class scheduled notification failed")
 
 	def on_update(self):
 		if not self.event:
